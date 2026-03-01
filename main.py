@@ -1,30 +1,28 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from agent_service import agent
-from todo_service import get_tasks
-import os
+import agent_service
+import todo_service
 
 app = FastAPI()
 
-class Query(BaseModel):
+class ChatRequest(BaseModel):
     message: str
 
-@app.post("/chat")
-async def chat_endpoint(query: Query):
-    reply = agent(query.message)
-    return {"reply": reply}
-
-@app.get("/tasks")
-async def tasks_endpoint():
-    return get_tasks()
-
-# הנתיב הראשי שמגיש את דף ה-HTML
 @app.get("/", response_class=HTMLResponse)
-async def get_index():
+async def read_index():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
+
+@app.get("/tasks")
+async def list_tasks():
+    return todo_service.get_tasks()
+
+@app.post("/chat")
+async def chat_endpoint(req: ChatRequest):
+    reply = agent_service.agent(req.message)
+    return {"reply": reply}
 
 if __name__ == "__main__":
     import uvicorn

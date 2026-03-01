@@ -1,78 +1,45 @@
+import json
+import os
 import datetime
 
-# In-memory database
-tasks = []
-task_counter = 1
+DB_FILE = "tasks.json"
 
-def get_tasks():
-    """
-    Retrieves the complete list of all tasks currently stored in the system.
-    
-    Returns:
-        list: A list of dictionaries, where each dictionary represents a task 
-              containing id, title, description, type, start_date, and status.
-    """
+def _load_db():
+    if not os.path.exists(DB_FILE):
+        return []
+    with open(DB_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def _save_db(tasks):
+    with open(DB_FILE, "w", encoding="utf-8") as f:
+        json.dump(tasks, f, indent=4)
+
+def get_tasks(status: str = None, category: str = None):
+    tasks = _load_db()
+    if status:
+        tasks = [t for t in tasks if t['status'].lower() == status.lower()]
+    if category:
+        tasks = [t for t in tasks if t['category'].lower() == category.lower()]
     return tasks
 
-def add_task(title: str, description: str, task_type: str, start_date: str = None):
-    """
-    Creates and stores a new task in the collection. Use this when the user wants 
-    to schedule, remember, or add an item to their to-do list.
-    
-    Args:
-        title (str): A concise name or headline for the task.
-        description (str): Detailed information or notes about the task.
-        task_type (str): The category of the task (e.g., 'Work', 'Personal', 'Urgent').
-        start_date (str, optional): The scheduled date in 'YYYY-MM-DD' format. 
-                                    If not provided by the user, it defaults to today's date.
-                                    
-    Returns:
-        dict: The newly created task object including its unique generated ID.
-    """
-    global task_counter
-    new_task = {
-        "id": task_counter,
+def add_task(title: str, notes: str = "", category: str = "General", due_date: str = None):
+    tasks = _load_db()
+    new_id = max([t['id'] for t in tasks], default=100) + 1
+    entry = {
+        "id": new_id,
         "title": title,
-        "description": description,
-        "type": task_type,
-        "start_date": start_date or str(datetime.date.today()),
-        "status": "Open"
+        "notes": notes,
+        "category": category,
+        "date": due_date or str(datetime.date.today()),
+        "status": "pending"
     }
-    tasks.append(new_task)
-    task_counter += 1
-    return new_task
+    tasks.append(entry)
+    _save_db(tasks)
+    return entry
 
-def delete_task(task_id: int):
-    """
-    Removes a specific task from the system based on its unique ID. 
-    Use this when the user wants to cancel or delete a task.
-    
-    Args:
-        task_id (int): The unique numerical identifier of the task to be removed.
-        
-    Returns:
-        dict: A confirmation message indicating the task was successfully deleted.
-    """
-    global tasks
+def remove_task(task_id: int):
+    tasks = _load_db()
+    initial_len = len(tasks)
     tasks = [t for t in tasks if t['id'] != task_id]
-    return {"message": f"Task {task_id} has been successfully deleted."}
-
-def update_task(task_id: int, title: str = None, status: str = None):
-    """
-    Updates the details of an existing task. Use this when the user wants to 
-    change a task's name or mark it as 'Completed'.
-    
-    Args:
-        task_id (int): The ID of the task to update.
-        title (str, optional): The new title for the task.
-        status (str, optional): The new status (e.g., 'Completed', 'In Progress').
-        
-    Returns:
-        dict: The updated task object or an error message if not found.
-    """
-    for task in tasks:
-        if task['id'] == task_id:
-            if title: task['title'] = title
-            if status: task['status'] = status
-            return task
-    return {"error": "Task not found"}
+    _save_db(tasks)
+    return {"success": len(tasks) < initial_len}
