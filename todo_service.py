@@ -43,3 +43,23 @@ def remove_task(task_id: int):
     tasks = [t for t in tasks if t['id'] != task_id]
     _save_db(tasks)
     return {"success": len(tasks) < initial_len}
+
+def update_task(task_id: int, title: str = None, notes: str = None, category: str = "General", due_date: str = None, status: str = None):
+    tasks = _load_db()
+    task_found = False
+    
+    for t in tasks:
+        if t['id'] == task_id:
+            if title: t['title'] = title
+            if notes: t['notes'] = notes
+            if category: t['category'] = category
+            if status: t['status'] = status
+            if due_date: t['date'] = due_date
+            task_found = True
+            entry = t
+            break
+    
+    if task_found:
+        _save_db(tasks)
+        return entry
+    return {"error": "Task not found"}

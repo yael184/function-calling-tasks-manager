@@ -29,7 +29,7 @@ tool_definition = types.Tool(
                     "title": {"type": "string"},
                     "notes": {"type": "string"},
                     "category": {"type": "string"},
-                    "due_date": {"type": "string"}
+                    "due_date": {"type": "string", "description": "The date in YYYY-MM-DD format. Always convert relative dates (like 'tomorrow' or 'next Sunday') to this format based on the current date."}
                 },
                 "required": ["title"]
             }
@@ -38,6 +38,20 @@ tool_definition = types.Tool(
             name="delete_existing_task",
             description="Delete a task by ID.",
             parameters={"type": "object", "properties": {"task_id": {"type": "integer"}}, "required": ["task_id"]}
+        ),
+        types.FunctionDeclaration(
+            name="update_existing_task",
+            description="Update an existing task's details like title, date, or status.",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "integer", "description": "The ID of the task to update"},
+                    "title": {"type": "string"},
+                    "due_date": {"type": "string", "description": "New date in YYYY-MM-DD format"},
+                    "status": {"type": "string", "description": "Task status (e.g., 'pending', 'completed')"}
+                },
+                "required": ["task_id"]
+            }
         )
     ]
 )
@@ -45,7 +59,8 @@ tool_definition = types.Tool(
 DISPATCHER = {
     "fetch_all_tasks": todo_service.get_tasks,
     "create_new_task": todo_service.add_task,
-    "delete_existing_task": todo_service.remove_task
+    "delete_existing_task": todo_service.remove_task,
+    "update_existing_task": todo_service.update_task
 }
 
 def agent(user_input: str) -> str:
